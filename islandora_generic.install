@@ -1,0 +1,59 @@
+<?php
+
+/**
+ * @file
+ *
+ * Installs the required database schema for generic solution pack.
+ */
+
+/**
+ * Implementation of hook_install.
+ */
+function islandora_generic_install() {
+//no need to call install schema in Drupal 7
+}
+
+/**
+ * Implementation of hook_uninstall.
+ */
+function islandora_generic_uninstall() {
+
+}
+
+/**
+ * Implementation of hook_schema.
+ *
+ * @return array
+ */
+function islandora_generic_schema() {
+
+  $schema['islandora_generic_mappings'] = array(
+    'description' => t('Maps Dropbox Folder locations to PIDS of matching Fedora objects'),
+    'fields' => array(
+      'dropbox_path' => array(
+        'description' => t('Path to Dropbox folder'),
+        'type' => 'varchar',
+        'length' => '128',
+        'not null' => TRUE,
+      ),
+      'PID' => array(
+        'description' => t('Collection PID'),
+        'type' => 'varchar',
+        'length' => '20',
+        'not null' => TRUE,
+      ),
+      'modified' => array(
+        'description' => t('Modification date'),
+        'type' => 'varchar',
+        'length' => '64',
+      ),
+      'revision' => array(
+        'description' => t('Revision id'),
+        'type' => 'varchar',
+        'length' => '30',
+      )
+    ),
+    'primary key' => array('PID'),
+  );
+  return $schema;
+}

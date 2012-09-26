@@ -1,0 +1,60 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function islandora_generic_menu() {
+
+  $items['islandora_dropbox/sync'] = array(
+    'title' => 'Sync Dropbox with Fedora',
+    'page callback' => 'islandora_generic_dropbox_sync',
+    'file' => 'islandora_generic_sync.inc',
+    'access arguments' => array('read dropbox'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['islandora_dropbox/play'] = array(
+    'title' => 'Sync Dropbox with Fedora',
+    'page callback' => 'islandora_generic_playground',
+    'file' => 'islandora_generic_sync.inc',
+    'access arguments' => array('read dropbox'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/islandora/islandora_generic'] = array(
+    'title' => 'Dropbox Integration',
+    'description' => 'Configure Fedora dropbox replication.',
+    'page callback' => 'drupal_get_form',
+    'access arguments' => array('administer site configuration'),
+    'page arguments' => array('islandora_generic_admin'),
+    'file' => 'admin/islandora_generic.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['islandora_generic/setup'] = array(
+    'title' => 'Setup filetree js',
+    'page callback' => 'islandora_generic_filetree_setup',
+    'file' => 'islandora_generic_callbacks.inc',
+    'access arguments' => array('read dropbox'),
+    'type' => MENU_CALLBACK,
+  );
+
+    $items['islandora_generic/filetree'] = array(
+    'title' => 'View Synced Files',
+    'page callback' => 'islandora_generic_filetree',
+    'file' => 'islandora_generic_callbacks.inc',
+    'access arguments' => array('read dropbox'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+function islandora_generic_permission() {
+  return array(
+    'read dropbox' => array(
+      'title' => t('Read Dropbox Contents'),
+      'description' => t('Allows user to see and download dropbox items')
+    ),
+    'read files' => array(
+      'title' => t('Read Fedora Contents'),
+      'description' => t('Allows user to see and download fedora items')
+    ),
+  );
+}
