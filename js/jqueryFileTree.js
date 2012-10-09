@@ -30,14 +30,32 @@
 // This plugin is dual-licensed under the GNU General Public License and the MIT License and
 // is copyright 2008 A Beautiful Site, LLC.
 //
-if(jQuery) (function($){
+//function to parse urls
+
+
+(function($){
+
+  base = window.location.toString().split('/islandora_generic')[0];
+
+  $.ajax({
+    url:base + '/islandora_generic/filetree_setup',
+    async:false,
+    success: function(data, status, xhr) {
+      collectionRoot = data;
+    },
+    error: function() {
+      alert("AJAX call failed");
+    },
+    dataType: 'html'
+  });
 
   $.extend($.fn, {
     fileTree: function(o, h) {
       // Defaults
       if( !o ) var o = {};
-      if( o.root == undefined ) o.root = '/Alans';
-      if( o.script == undefined ) o.script = 'setup';
+      if( o.root == undefined ) o.root = '/';
+      if(o.pid == undefined) o.pid = collectionRoot;
+      if( o.script == undefined ) o.script = base + '/islandora_generic/sync';
       if( o.folderEvent == undefined ) o.folderEvent = 'click';
       if( o.expandSpeed == undefined ) o.expandSpeed= 500;
       if( o.collapseSpeed == undefined ) o.collapseSpeed= 500;
@@ -45,14 +63,19 @@ if(jQuery) (function($){
       if( o.collapseEasing == undefined ) o.collapseEasing = null;
       if( o.multiFolder == undefined ) o.multiFolder = true;
       if( o.loadMessage == undefined ) o.loadMessage = 'Loading...';
-
+      var urlparts =  window.location.toString().split('/');
+      if(urlparts[urlparts.length -1].indexOf(':') != -1){
+        o.pid = urlparts[urlparts.length -1];
+      }
+  
       $(this).each( function() {
 
-        function showTree(c, t) {
+        function showTree(c, t, p) {
           $(c).addClass('wait');
           $(".jqueryFileTree.start").remove();
           $.post(o.script, {
-            dir: t
+            dir: t,
+            pid: p
           }, function(data) {
             $(c).find('.start').html('');
             $(c).removeClass('wait').append(data);
@@ -77,7 +100,7 @@ if(jQuery) (function($){
                   $(this).parent().parent().find('LI.directory').removeClass('expanded').addClass('collapsed');
                 }
                 $(this).parent().find('UL').remove(); // cleanup
-                showTree( $(this).parent(), escape($(this).attr('rel').match( /.*\// )) );
+                showTree( $(this).parent(), escape($(this).attr('rel').match( /.*\// )), escape($(this).attr('pid')) );
                 $(this).parent().removeClass('collapsed').addClass('expanded');
               } else {
                 // Collapse
@@ -88,7 +111,8 @@ if(jQuery) (function($){
                 $(this).parent().removeClass('expanded').addClass('collapsed');
               }
             } else {
-              h($(this).attr('rel'));
+              
+              h($(this).attr('pid'));
             }
             return false;
           });
@@ -100,10 +124,14 @@ if(jQuery) (function($){
         // Loading message
         $(this).html('<ul class="jqueryFileTree start"><li class="wait">' + o.loadMessage + '<li></ul>');
         // Get the initial file list
-        showTree( $(this), escape(o.root) );
+     
+        showTree( $(this), escape(o.root), escape(o.pid));
       });
     }
+
   });
+
+
 
 })(jQuery);
 
@@ -113,8 +141,55 @@ if(jQuery) (function($){
   $(document).ready(function(){
     $('#fileview').fileTree({
       root: '/'
-    }, function(file) {
-      alert(file);
+    }, function(pid) {
+      window.open(base + '/islandora/object/' + pid + '/datastream/SOURCE/download');
+    });
+
+    $.contextMenu({
+      selector: '.dropbox_file_item',
+      callback: function(key, options) {
+
+        var urn = $(this).parent('div').attr('urn');
+       
+        var title = $(this).text().substring(2,100);
+        title = title.trim();
+
+        var comment_text = $(this).next('.comment_text');
+        var anno_type = comment_text.find('.comment_type').text();
+
+        if(key == 'delete'){
+          if (confirm("Permananently Delete Annotation '" + title + "'")) {
+            pb_deleteAnno(urn);
+          }
+
+        }
+
+        if(key == 'edit'){
+          $(this).addClass('annotation-opened').next().show();
+          var annotation = comment_text.find('.comment_content').text();
+          var pm = $(this).find('.comment_showhide');
+          if (pm.text() == '+ ') {
+            pm.empty().append('- ');
+            console.log(this);
+            var id = $(this).attr('id').substring(5,100);
+            var canvas = $(this).attr('canvas');
+            paint_commentAnnoTargets(this, canvas, id);
+          }
+          startEditting(title, annotation, anno_type, urn)
+        }
+      },
+      items: {
+        "edit": {
+          name: "Edit",
+          icon: "edit",
+          accesskey: "e"
+        },
+        "delete": {
+          name: "Delete annotation",
+          icon: "delete"
+        }
+
+      }
     });
   });
 })(jQuery);

@@ -13,58 +13,60 @@ function islandora_generic_dropbox_sync($path = null) {
 
   global $user, $base_path;
   $results = array();
-  //get client
+//get client
   $dropbox = dropbox_client_get_client();
   $dbobj = $dropbox->account();
-  $dirs_to_process = array();
   $dirs_to_process[] = array(
-    'root' => variable_get('islandora_generic_collection_pid', 'islandora:root'),
-    'content' => '/'
+    'parent_path' => '/',
+    'dir_path' => '/'
   );
   $dirs = array();
   $files = array();
-  // convert each content object to array
+// convert each content object to array
   while (count($dirs_to_process) > 0) {
     $info = array_shift($dirs_to_process);
-    $path = $info['content'];
+    $path = $info['dir_path'];
     $metadata = $dropbox->metadata($path);
     $contents = $metadata->contents;
     if (!$contents) {
       continue;
     }
 
-    //load array with results of current directory.  Each content object is either a dir or a file
+//load array with results of current directory.  Each content object is either a dir or a file
     foreach ($contents as $content) {
       if ($content->is_dir) {
         $dir_contents = array(
-          'root' => $content->path,
-          'parent' => $info['root'],
+          'path' => $content->path,
+          'parent' => $info['parent_path'],
           'modified' => $content->modified,
           'rev' => $content->rev
         );
         $dirs[] = $dir_contents;
         $dirs_to_process[] = array(
-          'root' => $path,
-          'content' => $content->path,
+          'parent_path' => $path,
+          'dir_path' => $content->path,
         );
       }
       else {
         $media = $dropbox->media($content->path);
+        if (isset($media->error)) {
+          drupal_set_message($content->path . " has error: " . $media->error);
+          continue;
+        }
         $file_contents = array(
+          'parent' => $info['parent_path'],
           'path' => $content->path,
           'url' => $media->url,
           'modified' => $content->modified,
           'rev' => $content->rev,
           'mime_type' => $content->mime_type
         );
-        if (!$media->url) {
-          drupal_set_message($content->path . " has no url");
-        }
+
         $files[] = $file_contents;
       }
     }
   }
-  $marker = 'Stop here';
+
   $batch = array(
     'title' => "Creating Fedora objects from Dropbox contents",
     'progress_message' => t('Synced @current directores and files out of @total.'),
@@ -78,7 +80,7 @@ function islandora_generic_dropbox_sync($path = null) {
   foreach ($files as $file) {
     $batch['operations'][] = array('islandora_generic_build_object', array($file));
   }
-  $collection_home = 'islandora/' . variable_get('islandora_generic_collection_pid', 'islandora:root');
+  $collection_home = 'islandora/object/' . variable_get('islandora_generic_collection_pid', 'islandora:root');
   batch_set($batch);
   batch_process($collection_home);
 }
@@ -89,21 +91,34 @@ function islandora_generic_dropbox_sync($path = null) {
  */
 function islandora_generic_build_collection($dir) {
   module_load_include('inc', 'islandora_generic', 'islandora_generic_database');
-  $collection_path = $dir['root'];
-  $parent_path = $dir['parent'];
-  $collection_pid = islandora_generic_get_pid_from_path($collection_path);
-  // build collection object if necessary
+  module_load_include('inc', 'islandora', 'includes/tuque');
+
+  $collection_path = $dir['path'];
+  $repository = new IslandoraTuque();
+  $query = "select \$pid from <#ri>
+            where \$pid <http://islandora.ca/ontology/relsext#hasDBpath> '$collection_path'";
+
+  $response = $repository->repository->ri->itqlQuery($query);
+  $collection_pid = $response[0]['pid']['value'];
+
+// build collection object if necessary
   if (!$collection_pid) {
     $path_parts = explode('/', $collection_path);
     $collection_name = array_pop($path_parts);
     if ($collection_name == '') {
       $collection_name = 'Dropbox Collection';
     }
-    if ($parent_path == variable_get('islandora_generic_collection_pid', 'islandora:root')) {
-      $parent_pid = $parent_path;
+
+    $parent_path = $dir['parent'];
+    if ($parent_path == variable_get('islandora_generic_collection_pid', 'islandora:root') || $parent_path == '/') {
+      $parent_pid = variable_get('islandora_generic_collection_pid', 'islandora:root');
     }
     else {
-      $parent_pid = islandora_generic_get_pid_from_path($parent_path);
+      $query = "select \$pid from <#ri>
+            where \$pid <http://islandora.ca/ontology/relsext#hasDBpath> '$parent_path'";
+
+      $response = $repository->repository->ri->itqlQuery($query);
+      $parent_pid = $response[0]['pid']['value'];
     }
     $collection_pid = islandora_generic_build_collection_object($parent_pid, $collection_name, $collection_path, $dir);
   }
@@ -114,19 +129,38 @@ function islandora_generic_build_object($file) {
   module_load_include('inc', 'islandora_generic', 'islandora_generic_database');
   global $base_url;
 
+  module_load_include('inc', 'islandora', 'includes/tuque');
 
-  $object_data = islandora_generic_get_data_from_path($file['path']);
+  $file_path = $file['path'];
+  $repository = new IslandoraTuque();
+  $query = "select \$pid from <#ri>
+            where \$pid <http://islandora.ca/ontology/relsext#hasDBpath> '$file_path'";
 
-  if ($object_data && $object_data['revision'] == $file['rev']) {
+  $response = $repository->repository->ri->itqlQuery($query);
+  $pid = $response[0]['pid']['value'];
+  if ($pid) {
+    $query = "select \$rev from <#ri>
+            where <info:fedora/$pid> <http://islandora.ca/ontology/relsext#hasDBrev> \$rev";
+    $response = $repository->repository->ri->itqlQuery($query);
+    $rev = $response[0]['rev']['value'];
+    if ($rev != $file['rev']) {
+      islandora_generic_update_object($file);
+    }
     return;
   }
-  if ($object_data && $object_data['revision'] != $file['rev']) {
-    islandora_generic_update_object($file);
 
+  $parent_path = $file['parent'];
+  if ($parent_path == '/') {
+    $collection_pid = variable_get('islandora_generic_collection_pid', 'islandora:root');
+  }
+  else {
+    $query = "select \$pid from <#ri>
+            where \$pid <http://islandora.ca/ontology/relsext#hasDBpath> '$parent_path'";
+
+    $response = $repository->repository->ri->itqlQuery($query);
+    $collection_pid = $response[0]['pid']['value'];
   }
 
-  $collection = pathinfo($file['path'], PATHINFO_DIRNAME);
-  $collection_pid = islandora_generic_get_pid_from_path($collection);
   $namespace = variable_get('islandora_generic_namespace', 'islandora');
   $filename = pathinfo($file['path'], PATHINFO_FILENAME);
   $thumbnail = $base_url . '/' . drupal_get_path('module', 'islandora_generic') . '/module_images/file_thumbnail.png';
@@ -147,10 +181,13 @@ function islandora_generic_build_object($file) {
   $source_datastream->mimetype = $file['mime_type'];
   $fedora_object->ingestDatastream($source_datastream);
 
+  $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasDBpath', $file['path'], TRUE);
+  $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasDBrev', $file['rev'], TRUE);
+
 
   $new_fedora_object = islandora_ingest_add_object($fedora_object);
   $pid = $fedora_object->id;
-  islandora_generic_set_pid_mapping($pid, $file['path'], $file['rev'], $file['modified']);
+// islandora_generic_set_pid_mapping($pid, $file['path'], $file['rev'], $file['modified']);
 }
 
 /**
@@ -166,7 +203,7 @@ function islandora_generic_build_collection_object($parent_pid, $collection_name
   module_load_include('inc', 'islandora_generic', 'islandora_generic_database');
   global $base_url;
   $namespace = variable_get('islandora_generic_namespace', 'islandora');
-  $thumbnail = $base_url . '/' . drupal_get_path('module', 'islandora_basic_collection') . '/module_images/Crystal_Clear_filesystem_folder_grey.png';
+  $thumbnail = $base_url . '/' . drupal_get_path('module', 'islandora_generic') . '/module_images/Crystal_Clear_filesystem_folder_grey.png';
 
   $content_models = array(array('pid' => 'islandora:collectionCModel'));
   $fedora_object = islandora_ingest_get_object($content_models, $parent_pid, 'isMemberOf', $namespace);
@@ -178,9 +215,11 @@ function islandora_generic_build_collection_object($parent_pid, $collection_name
   $thumbnail_datastream->mimetype = 'image/png';
   $fedora_object->ingestDatastream($thumbnail_datastream);
 
+  $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasDBpath', $dir['path'], TRUE);
+  $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasDBrev', $dir['rev'], TRUE);
+
   $new_fedora_object = islandora_ingest_add_object($fedora_object);
   $pid = $fedora_object->id;
-  islandora_generic_set_pid_mapping($pid, $path, $dir['rev'], $dir['modified']);
   return $pid;
 }
 
@@ -189,4 +228,53 @@ function islandora_generic_update_object($file) {
   $fedora_object = islandora_object_load($pid);
   $fedora_object['SOURCE']->content = file_get_contents($file_url['url']);
   $fedora_object['SOURCE']->mimeType = $file('mime_type');
+}
+
+function islandora_generic_find_orphans() {
+  module_load_include('php', 'dropbox_client', 'dropbox');
+  module_load_include('module', 'dropbox_client');
+  module_load_include('inc', 'islandora', 'includes/tuque');
+
+  global $user, $base_path;
+  $results = array();
+//get client
+  $dropbox = dropbox_client_get_client();
+  $dbobj = $dropbox->account();
+  $dirs_to_process = array('/');
+  $db_paths = array('/');
+// convert each content object to array
+  while (count($dirs_to_process) > 0) {
+    $path = array_shift($dirs_to_process);
+    $metadata = $dropbox->metadata($path);
+    $contents = $metadata->contents;
+    foreach ($contents as $content) {
+      if ($content->is_dir) {
+        $dirs_to_process[] = $content->path;
+      }
+      $db_paths[] = $content->path;
+    }
+  }
+
+  $repository = new IslandoraTuque();
+  $query = "select \$pid \$path from <#ri>
+            where \$pid <http://islandora.ca/ontology/relsext#hasDBpath> \$path";
+
+  $response = $repository->repository->ri->itqlQuery($query);
+  $pid = $response[0]['pid']['value'];
+  foreach ($response as $object) {
+    $fedora_paths[] = $object['path']['value'];
+    $path_mappings[$object['path']['value']] = $object['pid']['value'];
+  }
+  $orphans = array_diff($fedora_paths, $db_paths);
+  $list = array();
+  foreach ($orphans as $orphan) {
+    $list[] = l($orphan, "islandora/object/" . $path_mappings[$orphan]);
+  }
+
+  $title = "Orphaned objects";
+  $type = 'ul';
+  $attributes = array('class' => 'orphaned_objects');
+
+  $contents = theme_item_list(array('items' => $list, 'title' => $title, 'type' => 'ul', 'attributes' =>$attributes));
+  return $contents;
 }
