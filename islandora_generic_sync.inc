@@ -227,7 +227,7 @@ function islandora_generic_update_object($file) {
   $pid = $file['pid'];
   $fedora_object = islandora_object_load($pid);
   $fedora_object['SOURCE']->content = file_get_contents($file_url['url']);
-  $fedora_object['SOURCE']->mimeType = $file('mime_type');
+  $fedora_object['SOURCE']->mimeType = $file['mime_type'];
 }
 
 function islandora_generic_find_orphans() {
