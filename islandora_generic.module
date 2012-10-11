@@ -31,7 +31,7 @@ function islandora_generic_menu() {
   );
 
   $items['islandora_generic/filetree'] = array(
-    'title' => 'View Synced Files',
+    'title' => '',
     'page callback' => 'islandora_generic_filetree',
     'file' => 'islandora_generic_callbacks.inc',
     'access arguments' => array('read dropbox'),
