@@ -145,7 +145,7 @@
     $('#fileview').fileTree({
       root: '/'
     }, function(pid) {
-      window.open(base + '/islandora/object/' + pid + '/datastream/SOURCE/download');
+      window.open(base + '/islandora/object/' + pid);
     });
 
     $.contextMenu({
