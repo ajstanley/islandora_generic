@@ -51,6 +51,7 @@
 
   $.extend($.fn, {
     fileTree: function(o, h) {
+     
       // Defaults
       if( !o ) var o = {};
       if( o.root == undefined ) o.root = '/';
@@ -64,8 +65,10 @@
       if( o.multiFolder == undefined ) o.multiFolder = true;
       if( o.loadMessage == undefined ) o.loadMessage = 'Loading...';
       var urlparts =  window.location.toString().split('/');
-      if(urlparts[urlparts.length -1].indexOf(':') != -1){
-        o.pid = urlparts[urlparts.length -1];
+      var collection = urlparts[urlparts.length -1];
+      collection = collection.replace('%3A', ':');
+      if(collection.indexOf(':') != -1){
+        o.pid = collection;
       }
   
       $(this).each( function() {
