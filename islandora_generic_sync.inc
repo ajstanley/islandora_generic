@@ -69,7 +69,7 @@ function islandora_generic_dropbox_sync($path = null) {
 
   $batch = array(
     'title' => "Creating Fedora objects from Dropbox contents",
-    'progress_message' => t('Synced @current directores and files out of @total.'),
+    'progress_message' => t('Synced @current directories and files out of @total.'),
     'operations' => array(),
     'file' => drupal_get_path('module', 'islandora_generic') . '/islandora_generic_sync.inc',
   );
