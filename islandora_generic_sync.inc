@@ -93,10 +93,14 @@ function islandora_generic_build_collection($dir) {
   module_load_include('inc', 'islandora_generic', 'islandora_generic_database');
   module_load_include('inc', 'islandora', 'includes/tuque');
 
+  $ancestor = variable_get('islandora_generic_collection_pid', 'islandora:root');
+  $token = variable_get('dropbox_client_website_oauth_token', '');
   $collection_path = $dir['path'];
   $repository = new IslandoraTuque();
   $query = "select \$pid from <#ri>
-            where \$pid <http://islandora.ca/ontology/relsext#hasDBpath> '$collection_path'";
+            where \$pid <http://islandora.ca/ontology/relsext#hasDBpath> '$collection_path'
+            and \$pid <http://islandora.ca/ontology/relsext#hasDBToken> '$token'
+            and \$pid <http://islandora.ca/ontology/relsext#isDecendentOf> '$ancestor'";
 
   $response = $repository->repository->ri->itqlQuery($query);
   $collection_pid = $response[0]['pid']['value'];
@@ -115,7 +119,9 @@ function islandora_generic_build_collection($dir) {
     }
     else {
       $query = "select \$pid from <#ri>
-            where \$pid <http://islandora.ca/ontology/relsext#hasDBpath> '$parent_path'";
+            where \$pid <http://islandora.ca/ontology/relsext#hasDBpath> '$parent_path'
+            and \$pid <http://islandora.ca/ontology/relsext#hasDBToken> '$token'
+            and \$pid <http://islandora.ca/ontology/relsext#isDecendentOf> '$ancestor'";
 
       $response = $repository->repository->ri->itqlQuery($query);
       $parent_pid = $response[0]['pid']['value'];
@@ -127,15 +133,19 @@ function islandora_generic_build_collection($dir) {
 function islandora_generic_build_object($file) {
   module_load_include('inc', 'islandora', '/includes/islandora.ingest');
   module_load_include('inc', 'islandora_generic', 'islandora_generic_database');
+  module_load_include('inc', 'islandora', 'includes/tuque');
   global $base_url;
 
-  module_load_include('inc', 'islandora', 'includes/tuque');
+  $ancestor = variable_get('islandora_generic_collection_pid', 'islandora:root');
+  $token = variable_get('dropbox_client_website_oauth_token', '');
+
 
   $file_path = $file['path'];
   $repository = new IslandoraTuque();
-  $query = "select \$pid from <#ri>
-            where \$pid <http://islandora.ca/ontology/relsext#hasDBpath> '$file_path'";
-
+      $query = "select \$pid from <#ri>
+            where \$pid <http://islandora.ca/ontology/relsext#hasDBpath> '$file_path'
+            and \$pid <http://islandora.ca/ontology/relsext#hasDBToken> '$token'
+            and \$pid <http://islandora.ca/ontology/relsext#isDecendentOf> '$ancestor'";
   $response = $repository->repository->ri->itqlQuery($query);
   $pid = $response[0]['pid']['value'];
   if ($pid) {
@@ -183,6 +193,8 @@ function islandora_generic_build_object($file) {
 
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasDBpath', $file['path'], TRUE);
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasDBrev', $file['rev'], TRUE);
+  $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, 'isDecendentOf', $ancestor, TRUE);
+  $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasDBToken', $token, TRUE);
 
 
   $new_fedora_object = islandora_ingest_add_object($fedora_object);
@@ -202,6 +214,8 @@ function islandora_generic_build_collection_object($parent_pid, $collection_name
   module_load_include('inc', 'islandora', '/includes/islandora.ingest');
   module_load_include('inc', 'islandora_generic', 'islandora_generic_database');
   global $base_url;
+  $ancestor = variable_get('islandora_generic_collection_pid', 'islandora:root');
+  $token = variable_get('dropbox_client_website_oauth_token', '');
   $namespace = variable_get('islandora_generic_namespace', 'islandora');
   $thumbnail = $base_url . '/' . drupal_get_path('module', 'islandora_generic') . '/module_images/Crystal_Clear_filesystem_folder_grey.png';
 
@@ -217,7 +231,8 @@ function islandora_generic_build_collection_object($parent_pid, $collection_name
 
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasDBpath', $dir['path'], TRUE);
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasDBrev', $dir['rev'], TRUE);
-
+  $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, 'isDecendentOf', $ancestor, TRUE);
+  $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasDBToken', $token, TRUE);
   $new_fedora_object = islandora_ingest_add_object($fedora_object);
   $pid = $fedora_object->id;
   return $pid;
@@ -275,6 +290,6 @@ function islandora_generic_find_orphans() {
   $type = 'ul';
   $attributes = array('class' => 'orphaned_objects');
 
-  $contents = theme_item_list(array('items' => $list, 'title' => $title, 'type' => 'ul', 'attributes' =>$attributes));
+  $contents = theme_item_list(array('items' => $list, 'title' => $title, 'type' => 'ul', 'attributes' => $attributes));
   return $contents;
 }
