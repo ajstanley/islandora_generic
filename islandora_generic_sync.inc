@@ -54,7 +54,7 @@ function islandora_generic_dropbox_sync($path = null) {
           continue;
         }
         $file_contents = array(
-          'parent' => $info['parent_path'],
+          'parent' => $info['dir_path'],
           'path' => $content->path,
           'url' => $media->url,
           'modified' => $content->modified,
