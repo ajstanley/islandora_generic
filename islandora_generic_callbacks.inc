@@ -16,7 +16,7 @@ function islandora_generic_filetree_sync() {
   }
   $collection_object = islandora_object_load($collection_pid);
   if(!isset($collection_object)){
-    drupal_set_message(t("Dropbox Sync does not appear to be correctly configured"));
+    echo(t("Dropbox Sync does not appear to be correctly configured"));
     return;
   }
   $query = islandora_generic_get_collection_query($collection_pid);
