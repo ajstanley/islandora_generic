@@ -165,7 +165,9 @@ function islandora_generic_build_object($file) {
   }
   else {
     $query = "select \$pid from <#ri>
-            where \$pid <http://islandora.ca/ontology/relsext#hasDBpath> '$parent_path'";
+            where \$pid <http://islandora.ca/ontology/relsext#hasDBpath> '$parent_path'
+            and \$pid <http://islandora.ca/ontology/relsext#hasDBToken> '$token'
+            and \$pid <http://islandora.ca/ontology/relsext#isDecendentOf> '$ancestor'";
 
     $response = $repository->repository->ri->itqlQuery($query);
     $collection_pid = $response[0]['pid']['value'];
