@@ -8,7 +8,7 @@ function islandora_generic_menu() {
   $items['islandora_dropbox/sync'] = array(
     'title' => 'Sync Dropbox with Fedora',
     'page callback' => 'islandora_generic_dropbox_sync',
-    'file' => 'islandora_generic_sync.inc',
+    'file' => 'includes/islandora_generic_sync.inc',
     'access arguments' => array('read dropbox'),
     'type' => MENU_NORMAL_ITEM,
   );
@@ -25,7 +25,7 @@ function islandora_generic_menu() {
   $items['islandora_generic/sync'] = array(
     'title' => 'Setup filetree js',
     'page callback' => 'islandora_generic_filetree_sync',
-    'file' => 'islandora_generic_callbacks.inc',
+    'file' => 'includes/islandora_generic_callbacks.inc',
     'access arguments' => array('read dropbox'),
     'type' => MENU_CALLBACK,
   );
@@ -33,15 +33,15 @@ function islandora_generic_menu() {
   $items['islandora_generic/filetree'] = array(
     'title' => 'File View',
     'page callback' => 'islandora_generic_filetree',
-    'file' => 'islandora_generic_callbacks.inc',
+    'file' => 'includes/islandora_generic_callbacks.inc',
     'access arguments' => array('read dropbox'),
     'type' => MENU_NORMAL_ITEM,
   );
 
   $items['islandora_generic/orphan'] = array(
-    'title' => 'Detect Orphaned Objects',
+    'title' => 'Orphaned Objects',
     'page callback' => 'islandora_generic_find_orphans',
-    'file' => 'islandora_generic_sync.inc',
+    'file' => 'includes/islandora_generic_sync.inc',
     'access arguments' => array('find orphans'),
     'type' => MENU_NORMAL_ITEM,
   );
@@ -49,7 +49,7 @@ function islandora_generic_menu() {
   $items['islandora_generic/filetree_setup'] = array(
     'title' => 'Setup Filetree',
     'page callback' => 'islandora_generic_filetree_setup',
-    'file' => 'islandora_generic_callbacks.inc',
+    'file' => 'includes/islandora_generic_callbacks.inc',
     'access arguments' => array('read dropbox'),
     'type' => MENU_CALLBACK,
   );
