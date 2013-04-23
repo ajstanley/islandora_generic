@@ -16,11 +16,11 @@ function islandora_generic_filetree_sync() {
   }
   $collection_object = islandora_object_load($collection_pid);
   if(!isset($collection_object)){
-    echo(t("Dropbox Sync does not appear to be correctly configured"));
+    echo(t("Dropbox Sync does not appear to be correctly configured."));
     return;
   }
   $query = islandora_generic_get_collection_query($collection_pid);
-  $objects = $collection_object->repository->ri->itqlQuery($query, 'unlimited', '0');
+  $objects = $collection_object->repository->ri->itqlQuery($query, 'unlimited');
   $dirstring = '';
   $filestring = '';
 
@@ -33,11 +33,11 @@ function islandora_generic_filetree_sync() {
     }
     else {
       $mime_query = islandora_generic_get_mimetype_query($object['object']['value']);
-      $mimetypes = $collection_object->repository->ri->itqlQuery($mime_query, 'unlimited', '0');
+      $mimetypes = $collection_object->repository->ri->itqlQuery($mime_query, 'unlimited');
       $mime_type = $mimetypes[0]['object']['value'];
       $ext = $mime_helper->getExtension($mime_type);
 
-      $filestring .= "<li class='file ext_$ext dropbox_file_item'><a href='#' class = 'dropbox_file_item' rel='$rel'  pid='$filepid'>$label</a></li>";
+      $filestring .= "<li title = '$mime_type' class='file ext_$ext dropbox_file_item'><a href='#' class = 'dropbox_file_item' rel='$rel'  pid='$filepid'>$label</a></li>";
     }
   }
   echo "<ul class='jqueryFileTree' style='display: none;'>$dirstring $filestring</ul>";
