@@ -1,19 +1,25 @@
 <?php
 
 /**
- * Creates fedora objects to represent folders and files from Dropbox folder
- * @global user $user
- * @global url $base_path
- * @param string $path
- * @return string
+ * @file
+ * Syncs dropbox to specified collection.
  */
+
 define('HAS_DB_PATH', 'hasDBpath');
 define('HAS_DB_REV', 'hasDBrev');
 define('IS_DECENDANT_OF', 'isDecendentOf');
 define('HAS_DB_TOKEN', 'hasDBToken');
 define('IS_DB_ORPHAN', 'isDBOrphan');
 
-function islandora_generic_dropbox_sync($path = null) {
+/**
+ * Creates fedora objects to represent folders and files from Dropbox folder.
+ * @global user $user
+ * @global url $base_path
+ *
+ * @param string $path
+ *   Path to Dropbox subfolder.
+ */
+function islandora_generic_dropbox_sync($path = NULL) {
   module_load_include('php', 'dropbox_client', 'dropbox');
   module_load_include('module', 'dropbox_client');
   $islandora_generic_basepath = variable_get('islandora_generic_base_dir', '/');
@@ -22,16 +28,16 @@ function islandora_generic_dropbox_sync($path = null) {
   }
   global $user, $base_path;
   $results = array();
-//get client
+  // Get client.
   $dropbox = dropbox_client_get_client();
   $dbobj = $dropbox->account();
   $dirs_to_process[] = array(
     'parent_path' => $islandora_generic_basepath,
-    'dir_path' => $islandora_generic_basepath
+    'dir_path' => $islandora_generic_basepath,
   );
   $dirs = array();
   $files = array();
-// convert each content object to array
+  // Convert each content object to array.
   while (count($dirs_to_process) > 0) {
     $info = array_shift($dirs_to_process);
     $path = $info['dir_path'];
@@ -43,14 +49,15 @@ function islandora_generic_dropbox_sync($path = null) {
       continue;
     }
 
-//load array with results of current directory.  Each content object is either a dir or a file
+    // Load array with results of current directory.
+    // Each content object is either a dir or a file.
     foreach ($contents as $content) {
       if ($content->is_dir) {
         $dir_contents = array(
           'path' => $content->path,
           'parent' => $info['parent_path'],
           'modified' => $content->modified,
-          'rev' => $content->rev
+          'rev' => $content->rev,
         );
         $dirs[] = $dir_contents;
         $dirs_to_process[] = array(
@@ -70,7 +77,7 @@ function islandora_generic_dropbox_sync($path = null) {
           'url' => $media->url,
           'modified' => $content->modified,
           'rev' => $content->rev,
-          'mime_type' => $content->mime_type
+          'mime_type' => $content->mime_type,
         );
 
         $files[] = $file_contents;
@@ -97,8 +104,10 @@ function islandora_generic_dropbox_sync($path = null) {
 }
 
 /**
- * Builds Fedora collection object to represent Dropbox folder, and populates collection with objects representing Dropbox files
- * @param array $result
+ * Builds and polulatedFedora collection object to represent Dropbox folder.
+ *
+ * @param string $dir
+ *   Dropbox directory path.
  */
 function islandora_generic_build_collection($dir) {
   module_load_include('inc', 'islandora_generic', 'includes/islandora_generic_database');
@@ -116,7 +125,7 @@ function islandora_generic_build_collection($dir) {
   $response = $repository->repository->ri->itqlQuery($query);
   $collection_pid = $response[0]['pid']['value'];
 
-// build collection object if necessary
+  // Build collection object if necessary.
   if (!$collection_pid) {
     $path_parts = explode('/', $collection_path);
     $collection_name = array_pop($path_parts);
@@ -141,6 +150,18 @@ function islandora_generic_build_collection($dir) {
   }
 }
 
+/**
+ * Builds Fedora object from Dropbox file.
+ *
+ * @global url $base_url
+ *
+ * @param file $file
+ *   File object representing Dropbox input file.
+ * 
+ * @return NULL
+ *   Terminates script.
+ */
+
 function islandora_generic_build_object($file) {
   module_load_include('inc', 'islandora', '/includes/ingest.form');
   module_load_include('inc', 'islandora_generic', 'islandora_generic_database');
@@ -148,7 +169,7 @@ function islandora_generic_build_object($file) {
   global $base_url;
 
   $islandora_generic_basepath = variable_get('islandora_generic_base_dir', '/');
-  if($islandora_generic_basepath[0] != '/'){
+  if ($islandora_generic_basepath[0] != '/') {
     $islandora_generic_basepath = "/$islandora_generic_basepath";
   }
   $ancestor = variable_get('islandora_generic_collection_pid', 'islandora:root');
@@ -195,7 +216,7 @@ function islandora_generic_build_object($file) {
     'namespace' => $namespace,
     'label' => $file_name,
     'collections' => array($collection_pid),
-    'models' => array('islandora:collectionCModel')
+    'models' => array('islandora:collectionCModel'),
   );
   $fedora_object = islandora_ingest_form_prepare_new_object($config);
   $thumbnail_datastream = $fedora_object->constructDatastream('TN');
@@ -218,16 +239,22 @@ function islandora_generic_build_object($file) {
 
   $new_fedora_object = islandora_add_object($fedora_object);
   $pid = $fedora_object->id;
-// islandora_generic_set_pid_mapping($pid, $file['path'], $file['rev'], $file['modified']);
+  // islandora_generic_set_pid_mapping($pid, $file['path'], $file['rev'], $file['modified']);
 }
 
 /**
- * Build collection object mapped to dropbox folder
+ * Build collection object mapped to dropbox folder.
  * @global url $base_url
+ *
  * @param pid $parent_pid
+ *   PID of parent collection.
  * @param string $collection_name
+ *   PID of Dropbox sync collection.
  * @param string $path
+ *   Path to Dropbox file.
+ *
  * @return pid
+ *   Pid of created object.
  */
 function islandora_generic_build_collection_object($parent_pid, $collection_name, $path, $dir) {
   module_load_include('inc', 'islandora', '/includes/ingest.form');
@@ -241,7 +268,7 @@ function islandora_generic_build_collection_object($parent_pid, $collection_name
     'namespace' => $namespace,
     'label' => $collection_name,
     'collections' => array($parent_pid),
-    'models' => array('islandora:collectionCModel')
+    'models' => array('islandora:collectionCModel'),
   );
   $fedora_object = islandora_ingest_form_prepare_new_object($config);
   $thumbnail_datastream = $fedora_object->constructDatastream('TN');
@@ -249,7 +276,7 @@ function islandora_generic_build_collection_object($parent_pid, $collection_name
   $thumbnail_datastream->label = 'TN';
   $thumbnail_datastream->mimetype = 'image/png';
   $fedora_object->ingestDatastream($thumbnail_datastream);
-
+  $fedora_object->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOf', $parent_pid);
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, HAS_DB_PATH, $dir['path'], TRUE);
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, HAS_DB_REV, $dir['rev'], TRUE);
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, IS_DECENDANT_OF, $ancestor, TRUE);
@@ -259,6 +286,12 @@ function islandora_generic_build_collection_object($parent_pid, $collection_name
   return $pid;
 }
 
+/**
+ * Updates Fedora Object when Dropbox file has changed.
+ *
+ * @param file $file
+ *   File object corresponding to Dropbox file.
+ */
 function islandora_generic_update_object($file) {
   $pid = $file['pid'];
   $fedora_object = islandora_object_load($pid);
@@ -267,12 +300,12 @@ function islandora_generic_update_object($file) {
 }
 
 /**
- * Finds all Objects decending from Islandor Generic root collection
- * which no longer have corresponding files in registered dropbox
+ * Finds all orphaned Objects.
+ *
  * @global user $user
  * @global url $base_path
  * @return string
- *  returned string is a themed list of orphaned pids
+ *   returned string is a themed list of orphaned pids
  */
 function islandora_generic_find_orphans() {
   module_load_include('php', 'dropbox_client', 'dropbox');
@@ -281,16 +314,16 @@ function islandora_generic_find_orphans() {
 
   global $user, $base_path;
   $results = array();
-//get client
+  // Get client.
   $dropbox = dropbox_client_get_client();
   $dbobj = $dropbox->account();
-// initialize directories and db paths
+  // Initialize directories and db paths.
   $root_pid = variable_get('islandora_generic_collection_pid', '');
   $islandora_generic_basepath = variable_get('islandora_generic_base_dir', '/');
   $dirs_to_process = array($islandora_generic_basepath = variable_get('islandora_generic_base_dir', $islandora_generic_basepath));
   $db_paths = array($islandora_generic_basepath);
 
-// convert each content object to array
+  // Convert each content object to an array,
   while (count($dirs_to_process) > 0) {
     $path = array_shift($dirs_to_process);
     $metadata = $dropbox->metadata($path);
@@ -305,8 +338,7 @@ function islandora_generic_find_orphans() {
     }
   }
 
-
-// get all pids, with corresponding paths to all objects decendent from
+  // Get all pids, with corresponding paths to all decendant objects.
   $repository = new IslandoraTuque();
   $query = "select \$pid \$path from  <#ri>
             where \$pid <http://islandora.ca/ontology/relsext#isDecendentOf> '$root_pid'
@@ -334,8 +366,12 @@ function islandora_generic_find_orphans() {
   $title = t("Orphaned objects from @label @pid", array('@label' => $collection_object->label, '@pid' => "($root_pid)"));
   $type = 'ul';
   $attributes = array('class' => 'orphaned_objects');
-
-  $contents = theme_item_list(array('items' => $list, 'title' => $title, 'type' => 'ul', 'attributes' => $attributes));
+  $list = array(
+    'items' => $list,
+    'title' => $title,
+    'type' => 'ul',
+    'attributes' => $attributes,
+  );
+  $contents = theme_item_list($list);
   return $contents;
 }
-

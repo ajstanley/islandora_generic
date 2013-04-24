@@ -6,8 +6,9 @@
  */
 
 /**
- *
- * @return type
+ * Admin from.
+ * @return array
+ *  Returns admin form.
  */
 function islandora_generic_admin() {
   $form = array();
