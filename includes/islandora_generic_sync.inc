@@ -234,10 +234,7 @@ function islandora_generic_build_object($file) {
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, IS_DECENDANT_OF, $ancestor, TRUE);
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, HAS_DB_TOKEN, $token, TRUE);
 
-
   $new_fedora_object = islandora_add_object($fedora_object);
-  $pid = $fedora_object->id;
-  // islandora_generic_set_pid_mapping($pid, $file['path'], $file['rev'], $file['modified']);
 }
 
 /**
