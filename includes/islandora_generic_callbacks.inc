@@ -68,7 +68,7 @@ EOQ;
 function islandora_generic_get_mimetype_query($pid) {
   $query = <<<EOQ
     select \$object from <#ri>
-    where <info:fedora/$pid/SOURCE> <info:fedora/fedora-system:def/view#mimeType> \$object
+    where <info:fedora/$pid/OBJ> <info:fedora/fedora-system:def/view#mimeType> \$object
 EOQ;
   return $query;
 }

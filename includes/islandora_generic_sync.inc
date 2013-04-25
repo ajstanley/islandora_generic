@@ -4,7 +4,6 @@
  * @file
  * Syncs dropbox to specified collection.
  */
-
 define('HAS_DB_PATH', 'hasDBpath');
 define('HAS_DB_REV', 'hasDBrev');
 define('IS_DECENDANT_OF', 'isDecendentOf');
@@ -26,11 +25,8 @@ function islandora_generic_dropbox_sync($path = NULL) {
   if ($islandora_generic_basepath[0] != '/') {
     $islandora_generic_basepath = "/$islandora_generic_basepath";
   }
-  global $user, $base_path;
-  $results = array();
   // Get client.
   $dropbox = dropbox_client_get_client();
-  $dbobj = $dropbox->account();
   $dirs_to_process[] = array(
     'parent_path' => $islandora_generic_basepath,
     'dir_path' => $islandora_generic_basepath,
@@ -55,15 +51,16 @@ function islandora_generic_dropbox_sync($path = NULL) {
       if ($content->is_dir) {
         $dir_contents = array(
           'path' => $content->path,
-          'parent' => $info['parent_path'],
+          'parent' => $info['dir_path'],
           'modified' => $content->modified,
           'rev' => $content->rev,
         );
         $dirs[] = $dir_contents;
         $dirs_to_process[] = array(
-          'parent_path' => $path,
+          'parent_path' => $info['parent_path'],
           'dir_path' => $content->path,
         );
+        $pause = "here";
       }
       else {
         $media = $dropbox->media($content->path);
@@ -106,8 +103,8 @@ function islandora_generic_dropbox_sync($path = NULL) {
 /**
  * Builds and polulatedFedora collection object to represent Dropbox folder.
  *
- * @param string $dir
- *   Dropbox directory path.
+ * @param array $dir
+ *   Associative array containg all releveant informtion about this directory.
  */
 function islandora_generic_build_collection($dir) {
   module_load_include('inc', 'islandora_generic', 'includes/islandora_generic_database');
@@ -145,8 +142,9 @@ function islandora_generic_build_collection($dir) {
 
       $response = $repository->repository->ri->itqlQuery($query);
       $parent_pid = $response[0]['pid']['value'];
+      $parent_pid = $parent_pid ? $parent_pid : $ancestor;
     }
-    $collection_pid = islandora_generic_build_collection_object($parent_pid, $collection_name, $collection_path, $dir);
+    $collection_pid = islandora_generic_build_collection_object($parent_pid, $collection_name, $dir);
   }
 }
 
@@ -161,7 +159,6 @@ function islandora_generic_build_collection($dir) {
  * @return NULL
  *   Terminates script.
  */
-
 function islandora_generic_build_object($file) {
   module_load_include('inc', 'islandora', '/includes/ingest.form');
   module_load_include('inc', 'islandora_generic', 'islandora_generic_database');
@@ -225,12 +222,13 @@ function islandora_generic_build_object($file) {
   $thumbnail_datastream->mimetype = 'image/png';
   $fedora_object->ingestDatastream($thumbnail_datastream);
 
-  $source_datastream = $fedora_object->constructDatastream('SOURCE');
+  $source_datastream = $fedora_object->constructDatastream('OBJ');
   $source_datastream->setContentFromString(file_get_contents($file['url']));
-  $source_datastream->label = 'SOURCE';
+  $source_datastream->label = 'Source Document';
   $source_datastream->mimetype = $file['mime_type'];
   $fedora_object->ingestDatastream($source_datastream);
 
+  $fedora_object->relationships->add(FEDORA_MODEL_URI, 'hasModel', 'islandora:sp_generic');
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, HAS_DB_PATH, $file['path'], TRUE);
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, HAS_DB_REV, $file['rev'], TRUE);
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, IS_DECENDANT_OF, $ancestor, TRUE);
@@ -256,7 +254,7 @@ function islandora_generic_build_object($file) {
  * @return pid
  *   Pid of created object.
  */
-function islandora_generic_build_collection_object($parent_pid, $collection_name, $path, $dir) {
+function islandora_generic_build_collection_object($parent_pid, $collection_name, $dir) {
   module_load_include('inc', 'islandora', '/includes/ingest.form');
   module_load_include('inc', 'islandora_generic', 'islandora_generic_database');
   global $base_url;
@@ -276,13 +274,13 @@ function islandora_generic_build_collection_object($parent_pid, $collection_name
   $thumbnail_datastream->label = 'TN';
   $thumbnail_datastream->mimetype = 'image/png';
   $fedora_object->ingestDatastream($thumbnail_datastream);
-  $fedora_object->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOf', $parent_pid);
+  $fedora_object->relationships->add(FEDORA_MODEL_URI, 'hasModel', 'islandora:collectionCModel');
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, HAS_DB_PATH, $dir['path'], TRUE);
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, HAS_DB_REV, $dir['rev'], TRUE);
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, IS_DECENDANT_OF, $ancestor, TRUE);
   $fedora_object->relationships->add(ISLANDORA_RELS_EXT_URI, HAS_DB_TOKEN, $token, TRUE);
   $new_fedora_object = islandora_add_object($fedora_object);
-  $pid = $fedora_object->id;
+  $pid = $new_fedora_object->id;
   return $pid;
 }
 
@@ -295,8 +293,8 @@ function islandora_generic_build_collection_object($parent_pid, $collection_name
 function islandora_generic_update_object($file) {
   $pid = $file['pid'];
   $fedora_object = islandora_object_load($pid);
-  $fedora_object['SOURCE']->content = file_get_contents($file_url['url']);
-  $fedora_object['SOURCE']->mimeType = $file['mime_type'];
+  $fedora_object['OBJ']->content = file_get_contents($file_url['url']);
+  $fedora_object['OBJ']->mimeType = $file['mime_type'];
 }
 
 /**
