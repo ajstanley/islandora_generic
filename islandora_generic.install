@@ -7,10 +7,13 @@
  */
 
 /**
- * Implementation of hook_install.
+ * Implements hook_install().
+ *
+ * @see islandora_islandora_required_objects()
  */
 function islandora_generic_install() {
-//no need to call install schema in Drupal 7
+  module_load_include('inc', 'islandora', 'includes/solution_packs');
+  islandora_install_solution_pack('islandora_generic');
 }
 
 /**
@@ -19,4 +22,3 @@ function islandora_generic_install() {
 function islandora_generic_uninstall() {
 
 }
-
