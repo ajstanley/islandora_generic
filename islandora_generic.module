@@ -74,3 +74,23 @@ function islandora_generic_permission() {
   );
 }
 
+
+/**
+ * Implements hook_islandora_required_objects().
+ */
+function islandora_generic_islandora_required_objects(IslandoraTuque $connection) {
+  // Critical Edition Content Model.
+  $islandora_generic_content_model = $connection->repository->constructObject('islandora:genericCModel');
+  $islandora_generic_content_model->owner = 'fedoraAdmin';
+  $islandora_generic_content_model->label = 'Islandora Generic Content Model';
+  $islandora_generic_content_model->models = 'fedora-system:ContentModel-3.0';
+
+  return array(
+    'islandora_generic' => array(
+      'title' => 'Islandora Generic',
+      'objects' => array(
+        $islandora_generic_content_model,
+      ),
+    ),
+  );
+}
