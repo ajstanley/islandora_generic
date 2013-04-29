@@ -60,7 +60,6 @@ function islandora_generic_dropbox_sync($path = NULL) {
           'parent_path' => $info['parent_path'],
           'dir_path' => $content->path,
         );
-        $pause = "here";
       }
       else {
         $media = $dropbox->media($content->path);
@@ -155,7 +154,7 @@ function islandora_generic_build_collection($dir) {
  *
  * @param file $file
  *   File object representing Dropbox input file.
- * 
+ *
  * @return NULL
  *   Terminates script.
  */

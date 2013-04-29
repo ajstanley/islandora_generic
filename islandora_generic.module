@@ -1,4 +1,9 @@
 <?php
+/**
+ * @file
+ * Dropbox integration module.
+ *
+ */
 
 /**
  * Implements hook_menu().
@@ -30,13 +35,6 @@ function islandora_generic_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['islandora_generic/filetree'] = array(
-    'title' => 'File View',
-    'page callback' => 'islandora_generic_filetree',
-    'file' => 'includes/islandora_generic_callbacks.inc',
-    'access arguments' => array('read dropbox'),
-    'type' => MENU_NORMAL_ITEM,
-  );
 
   $items['islandora_generic/orphan'] = array(
     'title' => 'Orphaned Objects',
@@ -46,17 +44,21 @@ function islandora_generic_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
 
-  $items['islandora_generic/filetree_setup'] = array(
-    'title' => 'Setup Filetree',
-    'page callback' => 'islandora_generic_filetree_setup',
+  $items['islandora_generic/filetree'] = array(
+    'title' => 'File View',
+    'page callback' => 'islandora_generic_filetree',
     'file' => 'includes/islandora_generic_callbacks.inc',
     'access arguments' => array('read dropbox'),
-    'type' => MENU_CALLBACK,
+    'type' => MENU_NORMAL_ITEM,
   );
 
   return $items;
 }
 
+/**
+ *
+ * Implements hook_permissions().
+ */
 function islandora_generic_permission() {
   return array(
     'read dropbox' => array(
@@ -73,7 +75,6 @@ function islandora_generic_permission() {
     ),
   );
 }
-
 
 /**
  * Implements hook_islandora_required_objects().
