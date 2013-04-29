@@ -306,11 +306,8 @@ function islandora_generic_find_orphans() {
   module_load_include('module', 'dropbox_client');
   module_load_include('inc', 'islandora', 'includes/tuque');
 
-  global $user, $base_path;
-  $results = array();
   // Get client.
   $dropbox = dropbox_client_get_client();
-  $dbobj = $dropbox->account();
   // Initialize directories and db paths.
   $root_pid = variable_get('islandora_generic_collection_pid', '');
   $islandora_generic_basepath = variable_get('islandora_generic_base_dir', '/');
@@ -338,16 +335,12 @@ function islandora_generic_find_orphans() {
             where \$pid <http://islandora.ca/ontology/relsext#isDecendentOf> '$root_pid'
             and   \$pid <http://islandora.ca/ontology/relsext#hasDBpath> \$path";
   $response = $repository->repository->ri->itqlQuery($query);
-
-  $pid = $response[0]['pid']['value'];
-
   foreach ($response as $object) {
     $fedora_paths[] = $object['path']['value'];
     $path_mappings[$object['path']['value']] = $object['pid']['value'];
   }
   $orphans = array_diff($fedora_paths, $db_paths);
 
-  $list = array();
   foreach ($orphans as $orphan) {
     $orphan_pid = $path_mappings[$orphan];
     $list[] = l($orphan, "islandora/object/$orphan_pid");
@@ -358,7 +351,6 @@ function islandora_generic_find_orphans() {
 
   $collection_object = islandora_object_load($root_pid);
   $title = t("Orphaned objects from @label @pid", array('@label' => $collection_object->label, '@pid' => "($root_pid)"));
-  $type = 'ul';
   $attributes = array('class' => 'orphaned_objects');
   $list = array(
     'items' => $list,
