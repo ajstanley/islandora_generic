@@ -1,8 +1,8 @@
 name = Islandora Dropbox Sync
 description = Access Dropbox Using App Dropbox Client For Drupal.
 package = Islandora
-core = 7.x
 dependencies[] = "dropbox_client"
+dependencies[] = "islandora_treeview"
 files[] = includes/islandora_generic_callbacks.inc
 files[] = includes/islandora_generic_database.inc
 files[] = includes/islandora_generic_sync.inc

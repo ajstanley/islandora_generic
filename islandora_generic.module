@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Dropbox integration module.
@@ -27,31 +28,23 @@ function islandora_generic_menu() {
     'file' => 'includes/islandora_generic.admin.inc',
     'type' => MENU_NORMAL_ITEM,
   );
-  $items['islandora_generic/sync'] = array(
-    'title' => 'Setup filetree js',
-    'page callback' => 'islandora_generic_filetree_sync',
-    'file' => 'includes/islandora_generic_callbacks.inc',
-    'access arguments' => array('read dropbox'),
-    'type' => MENU_CALLBACK,
-  );
-
 
   $items['islandora_generic/orphan'] = array(
-    'title' => 'Orphaned Objects',
+    'title' => 'Orphaned Object',
     'page callback' => 'islandora_generic_find_orphans',
     'file' => 'includes/islandora_generic_sync.inc',
     'access arguments' => array('find orphans'),
     'type' => MENU_NORMAL_ITEM,
   );
 
-  $items['islandora_generic/filetree'] = array(
-    'title' => 'File View',
-    'page callback' => 'islandora_generic_filetree',
-    'file' => 'includes/islandora_generic_callbacks.inc',
-    'access arguments' => array('read dropbox'),
+  $items['islandora_generic/view'] = array(
+    'title' => 'Dropbox Collection Treeview',
+    'page callback' => 'islandora_generic_show_filetree',
+    'file' => 'includes/islandora_generic_sync.inc',
+    'access arguments' => array('find orphans'),
     'type' => MENU_NORMAL_ITEM,
   );
-
+  
   return $items;
 }
 

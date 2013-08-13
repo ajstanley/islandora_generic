@@ -207,7 +207,7 @@ function islandora_generic_build_object($file) {
 
   $namespace = variable_get('islandora_generic_namespace', 'islandora');
   $file_name = pathinfo($file['path'], PATHINFO_BASENAME);
-  $thumbnail = $base_url . '/' . drupal_get_path('module', 'islandora_generic') . '/module_images/file_thumbnail.png';
+  $thumbnail = $base_url . '/' . drupal_get_path('module', 'islandora_generic') . '/images/file_thumbnail.png';
   $config = array(
     'namespace' => $namespace,
     'label' => $file_name,
@@ -257,7 +257,7 @@ function islandora_generic_build_collection_object($parent_pid, $collection_name
   $ancestor = variable_get('islandora_generic_collection_pid', 'islandora:root');
   $token = variable_get('dropbox_client_website_oauth_token', '');
   $namespace = variable_get('islandora_generic_namespace', 'islandora');
-  $thumbnail = $base_url . '/' . drupal_get_path('module', 'islandora_generic') . '/module_images/Crystal_Clear_filesystem_folder_grey.png';
+  $thumbnail = $base_url . '/' . drupal_get_path('module', 'islandora_generic') . '/images/Crystal_Clear_filesystem_folder_grey.png';
   $config = array(
     'namespace' => $namespace,
     'label' => $collection_name,
@@ -360,4 +360,13 @@ function islandora_generic_find_orphans() {
   );
   $contents = theme_item_list($list);
   return $contents;
+}
+
+/**
+ * Wrapper function to select configured dropbox collection.
+ */
+function islandora_generic_show_filetree(){
+  $fedora_root = variable_get('islandora_repository_pid', 'islandora:root');
+  $islandora_generic_dir = variable_get('islandora_generic_collection_pid', $fedora_root);
+  drupal_goto("islandora/treeview/$islandora_generic_dir");
 }
